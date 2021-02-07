@@ -13,7 +13,7 @@ export function getEthPriceInUSD(): BigDecimal {
   let pair = Pair.load(WHT_HUSD_PAIR) // usdt is token0
 
   if (pair !== null) {
-    return pair.token0Price.times(BigDecimal.fromString('10000000000'))
+    return pair.token0Price
   } else {
     return ZERO_BD
   }
