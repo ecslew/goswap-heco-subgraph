@@ -127,7 +127,7 @@ export function fetchTokenTotalSupply(tokenAddress: Address): BigInt {
 export function fetchTokenDecimals(tokenAddress: Address): BigInt {
   // hardcode overrides
   if (tokenAddress.toHexString() == '0x0298c2b32eae4da002a15f36fdf7615bea3da047') {
-    return BigInt.fromI32(18)
+    return BigInt.fromI32(8)
   }
   if (tokenAddress.toHexString() == '0x5545153ccfca01fbd7dd11c0b23ba694d9509a6f') {
     return BigInt.fromI32(18)
