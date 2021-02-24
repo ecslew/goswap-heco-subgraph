@@ -11,18 +11,19 @@ import {
   Swap as SwapEvent,
   Bundle
 } from '../types/schema'
-import { 
-  Pair as PairContract, 
-  Mint, 
-  Burn, 
-  Swap, 
-  Transfer, 
-  Sync, 
-  DummyMint, 
-  FeeUpdated, 
-  DepositedUpdated, 
-  VaultUpdated, 
-  RedepositRatioUpdated 
+import {
+  Pair as PairContract,
+  Mint,
+  Burn,
+  Swap,
+  Transfer,
+  Sync,
+  DummyMint,
+  DummyBurn,
+  FeeUpdated,
+  DepositedUpdated,
+  VaultUpdated,
+  RedepositRatioUpdated
 } from '../types/templates/Pair/Pair'
 import { updatePairDayData, updateTokenDayData, updateUniswapDayData, updatePairHourData } from './dayUpdates'
 import { getEthPriceInUSD, findEthPerToken, getTrackedVolumeUSD, getTrackedLiquidityUSD } from './pricing'
@@ -277,7 +278,11 @@ export function handleSync(event: Sync): void {
   pair.reserveETH = pair.reserve0
     .times(token0.derivedETH as BigDecimal)
     .plus(pair.reserve1.times(token1.derivedETH as BigDecimal))
-  pair.reserveUSD = pair.reserveETH.times(bundle.ethPrice) > BigDecimal.fromString('100000') ?  pair.reserveUSD : pair.reserveETH.times(bundle.ethPrice)
+  pair.reserveUSD =
+    pair.reserveETH.times(bundle.ethPrice) < BigDecimal.fromString('1000000000') &&
+    pair.reserveETH.times(bundle.ethPrice) > BigDecimal.fromString('0')
+      ? pair.reserveETH.times(bundle.ethPrice)
+      : pair.reserveUSD
 
   // use tracked amounts globally
   uniswap.totalLiquidityETH = uniswap.totalLiquidityETH.plus(trackedLiquidityETH)
@@ -565,9 +570,9 @@ export function handleSwap(event: Swap): void {
 export function handleFeeUpdated(event: FeeUpdated): void {
   let pair = Pair.load(event.address.toHex())
 
-  pair.fee = event.params.fee;
+  pair.fee = event.params.fee
 
-  pair.save();
+  pair.save()
 }
 
 export function handleDummyMint(event: DummyMint): void {
@@ -578,13 +583,13 @@ export function handleDummyMint(event: DummyMint): void {
   let dummy0Amount = convertTokenToDecimal(event.params.amount0, token0.decimals)
   let dummy1Amount = convertTokenToDecimal(event.params.amount1, token1.decimals)
 
-  pair.dummy0 = pair.dummy0.plus(dummy0Amount);
-  pair.dummy1 = pair.dummy1.plus(dummy1Amount);
+  pair.dummy0 = pair.dummy0.plus(dummy0Amount)
+  pair.dummy1 = pair.dummy1.plus(dummy1Amount)
 
   pair.save()
 }
 
-export function handleDummyBurn(event: DummyMint): void {
+export function handleDummyBurn(event: DummyBurn): void {
   let pair = Pair.load(event.address.toHex())
   let token0 = Token.load(pair.token0)
   let token1 = Token.load(pair.token1)
@@ -592,10 +597,10 @@ export function handleDummyBurn(event: DummyMint): void {
   let dummy0Amount = convertTokenToDecimal(event.params.amount0, token0.decimals)
   let dummy1Amount = convertTokenToDecimal(event.params.amount1, token1.decimals)
 
-  pair.dummy0 = pair.dummy0.minus(dummy0Amount);
-  pair.dummy1 = pair.dummy1.minus(dummy1Amount);
+  pair.dummy0 = pair.dummy0.minus(dummy0Amount)
+  pair.dummy1 = pair.dummy1.minus(dummy1Amount)
 
-  pair.save()
+  if (pair.dummy0 >= BigDecimal.fromString('0') && pair.dummy1 >= BigDecimal.fromString('0')) pair.save()
 }
 
 export function handleDepositedUpdated(event: DepositedUpdated): void {
@@ -613,17 +618,16 @@ export function handleVaultUpdated(event: VaultUpdated): void {
   saveYToken(event.params.vault)
 
   let pair = Pair.load(event.address.toHex())
-  if(event.params.tokenIndex == 0){
+  if (event.params.tokenIndex == 0) {
     pair.yToken0 = event.params.vault.toHexString()
-  }else{
+  } else {
     pair.yToken1 = event.params.vault.toHexString()
   }
   pair.save()
 }
 function saveYToken(address: Address): void {
   let yToken = YToken.load(address.toHex())
-  if (yToken)
-    return
+  if (yToken) return
 
   yToken = new YToken(address.toHex())
   yToken.symbol = fetchTokenSymbol(address)
