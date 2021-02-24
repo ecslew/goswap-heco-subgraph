@@ -235,20 +235,20 @@ export function handleSync(event: Sync): void {
   // reset factory liquidity by subtracting onluy tarcked liquidity
   uniswap.totalLiquidityETH = uniswap.totalLiquidityETH.minus(pair.trackedReserveETH as BigDecimal)
 
-  // reset token total liquidity amounts
-  token0.totalLiquidity = token0.totalLiquidity.minus(pair.reserve0)
-  token1.totalLiquidity = token1.totalLiquidity.minus(pair.reserve1)
-
   pair.reserveWithDummy0 = convertTokenToDecimal(event.params.reserve0, token0.decimals)
   pair.reserveWithDummy1 = convertTokenToDecimal(event.params.reserve1, token1.decimals)
-
-  pair.reserve0 = pair.reserveWithDummy0.minus(pair.dummy0)
-  pair.reserve1 = pair.reserveWithDummy1.minus(pair.dummy1)
 
   if (pair.reserveWithDummy1.notEqual(ZERO_BD)) pair.token0Price = pair.reserveWithDummy0.div(pair.reserveWithDummy1)
   else pair.token0Price = ZERO_BD
   if (pair.reserveWithDummy0.notEqual(ZERO_BD)) pair.token1Price = pair.reserveWithDummy1.div(pair.reserveWithDummy0)
   else pair.token1Price = ZERO_BD
+
+  pair.reserve0 = pair.reserveWithDummy0.minus(pair.dummy0)
+  pair.reserve1 = pair.reserveWithDummy1.minus(pair.dummy1)
+
+  // reset token total liquidity amounts
+  token0.totalLiquidity = token0.totalLiquidity.minus(pair.reserve0)
+  token1.totalLiquidity = token1.totalLiquidity.minus(pair.reserve1)
 
   pair.save()
 
@@ -277,7 +277,7 @@ export function handleSync(event: Sync): void {
   pair.reserveETH = pair.reserve0
     .times(token0.derivedETH as BigDecimal)
     .plus(pair.reserve1.times(token1.derivedETH as BigDecimal))
-  pair.reserveUSD = pair.reserveETH.times(bundle.ethPrice)
+  pair.reserveUSD = pair.reserveETH.times(bundle.ethPrice) > BigDecimal.fromString('100000') ?  pair.reserveUSD : pair.reserveETH.times(bundle.ethPrice)
 
   // use tracked amounts globally
   uniswap.totalLiquidityETH = uniswap.totalLiquidityETH.plus(trackedLiquidityETH)
