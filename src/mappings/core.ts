@@ -281,11 +281,7 @@ export function handleSync(event: Sync): void {
     pair.reserveETH = pair.reserve0
       .times(token0.derivedETH as BigDecimal)
       .plus(pair.reserve1.times(token1.derivedETH as BigDecimal))
-    pair.reserveUSD =
-      pair.reserveETH.times(bundle.ethPrice) < BigDecimal.fromString('1000000000') &&
-      pair.reserveETH.times(bundle.ethPrice) > BigDecimal.fromString('0')
-        ? pair.reserveETH.times(bundle.ethPrice)
-        : pair.reserveUSD
+    pair.reserveUSD = pair.reserveETH.times(bundle.ethPrice)
 
     // use tracked amounts globally
     uniswap.totalLiquidityETH = uniswap.totalLiquidityETH.plus(trackedLiquidityETH)
