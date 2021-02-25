@@ -46,8 +46,12 @@ function isCompleteMint(mintId: string): boolean {
   return MintEvent.load(mintId).sender !== null // sufficient checks
 }
 
+function skipBlockNumber(blockNumber: BigInt): boolean {
+  return blockNumber < BigInt.fromI32(2409174) || blockNumber > BigInt.fromI32(2410482)
+}
+
 export function handleTransfer(event: Transfer): void {
-  if (event.block.number <= BigInt.fromI32(2410152) || event.block.number >= BigInt.fromI32(2410482)) {
+  if (skipBlockNumber(event.block.number)) {
     // ignore initial transfers for first adds
     if (event.params.to.toHexString() == ADDRESS_ZERO && event.params.value.equals(BigInt.fromI32(1000))) {
       return
@@ -230,7 +234,7 @@ export function handleTransfer(event: Transfer): void {
 }
 
 export function handleSync(event: Sync): void {
-  if (event.block.number <= BigInt.fromI32(2410152) || event.block.number >= BigInt.fromI32(2410482)) {
+  if (skipBlockNumber(event.block.number)) {
     let pair = Pair.load(event.address.toHex())
     let token0 = Token.load(pair.token0)
     let token1 = Token.load(pair.token1)
@@ -300,7 +304,7 @@ export function handleSync(event: Sync): void {
 }
 
 export function handleMint(event: Mint): void {
-  if (event.block.number <= BigInt.fromI32(2410152) || event.block.number >= BigInt.fromI32(2410482)) {
+  if (skipBlockNumber(event.block.number)) {
     let transaction = Transaction.load(event.transaction.hash.toHexString())
     let mints = transaction.mints
     let mint = MintEvent.load(mints[mints.length - 1])
@@ -357,7 +361,7 @@ export function handleMint(event: Mint): void {
 }
 
 export function handleBurn(event: Burn): void {
-  if (event.block.number <= BigInt.fromI32(2410152) || event.block.number >= BigInt.fromI32(2410482)) {
+  if (skipBlockNumber(event.block.number)) {
     let transaction = Transaction.load(event.transaction.hash.toHexString())
 
     // safety check
@@ -421,7 +425,7 @@ export function handleBurn(event: Burn): void {
 }
 
 export function handleSwap(event: Swap): void {
-  if (event.block.number <= BigInt.fromI32(2410152) || event.block.number >= BigInt.fromI32(2410482)) {
+  if (skipBlockNumber(event.block.number)) {
     let pair = Pair.load(event.address.toHexString())
     let token0 = Token.load(pair.token0)
     let token1 = Token.load(pair.token1)
@@ -592,17 +596,19 @@ export function handleFeeUpdated(event: FeeUpdated): void {
 }
 
 export function handleDummyMint(event: DummyMint): void {
-  let pair = Pair.load(event.address.toHex())
-  let token0 = Token.load(pair.token0)
-  let token1 = Token.load(pair.token1)
+  if (skipBlockNumber(event.block.number)) {
+    let pair = Pair.load(event.address.toHex())
+    let token0 = Token.load(pair.token0)
+    let token1 = Token.load(pair.token1)
 
-  let dummy0Amount = convertTokenToDecimal(event.params.amount0, token0.decimals)
-  let dummy1Amount = convertTokenToDecimal(event.params.amount1, token1.decimals)
+    let dummy0Amount = convertTokenToDecimal(event.params.amount0, token0.decimals)
+    let dummy1Amount = convertTokenToDecimal(event.params.amount1, token1.decimals)
 
-  pair.dummy0 = pair.dummy0.plus(dummy0Amount)
-  pair.dummy1 = pair.dummy1.plus(dummy1Amount)
+    pair.dummy0 = pair.dummy0.plus(dummy0Amount)
+    pair.dummy1 = pair.dummy1.plus(dummy1Amount)
 
-  if (event.block.number <= BigInt.fromI32(2410152) || event.block.number >= BigInt.fromI32(2410482)) pair.save()
+    pair.save()
+  }
 }
 
 export function handleDummyBurn(event: DummyBurn): void {
@@ -616,7 +622,7 @@ export function handleDummyBurn(event: DummyBurn): void {
   pair.dummy0 = pair.dummy0.minus(dummy0Amount)
   pair.dummy1 = pair.dummy1.minus(dummy1Amount)
 
-  if (event.block.number <= BigInt.fromI32(2410152) || event.block.number >= BigInt.fromI32(2410482)) pair.save()
+  if (event.block.number <= BigInt.fromI32(2409174) || event.block.number >= BigInt.fromI32(2410482)) pair.save()
 }
 
 export function handleDepositedUpdated(event: DepositedUpdated): void {
