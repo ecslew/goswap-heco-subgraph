@@ -612,17 +612,18 @@ export function handleDummyMint(event: DummyMint): void {
 }
 
 export function handleDummyBurn(event: DummyBurn): void {
-  let pair = Pair.load(event.address.toHex())
-  let token0 = Token.load(pair.token0)
-  let token1 = Token.load(pair.token1)
+  if (skipBlockNumber(event.block.number)) {
+    let pair = Pair.load(event.address.toHex())
+    let token0 = Token.load(pair.token0)
+    let token1 = Token.load(pair.token1)
 
-  let dummy0Amount = convertTokenToDecimal(event.params.amount0, token0.decimals)
-  let dummy1Amount = convertTokenToDecimal(event.params.amount1, token1.decimals)
+    let dummy0Amount = convertTokenToDecimal(event.params.amount0, token0.decimals)
+    let dummy1Amount = convertTokenToDecimal(event.params.amount1, token1.decimals)
 
-  pair.dummy0 = pair.dummy0.minus(dummy0Amount)
-  pair.dummy1 = pair.dummy1.minus(dummy1Amount)
-
-  if (event.block.number <= BigInt.fromI32(2409174) || event.block.number >= BigInt.fromI32(2410482)) pair.save()
+    pair.dummy0 = pair.dummy0.minus(dummy0Amount)
+    pair.dummy1 = pair.dummy1.minus(dummy1Amount)
+    pair.save()
+  }
 }
 
 export function handleDepositedUpdated(event: DepositedUpdated): void {
