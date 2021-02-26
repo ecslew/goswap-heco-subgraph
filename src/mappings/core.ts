@@ -612,16 +612,33 @@ export function handleDummyMint(event: DummyMint): void {
 }
 
 export function handleDummyBurn(event: DummyBurn): void {
+  let pair = Pair.load(event.address.toHex())
+  let token0 = Token.load(pair.token0)
+  let token1 = Token.load(pair.token1)
   if (skipBlockNumber(event.block.number)) {
-    let pair = Pair.load(event.address.toHex())
-    let token0 = Token.load(pair.token0)
-    let token1 = Token.load(pair.token1)
 
     let dummy0Amount = convertTokenToDecimal(event.params.amount0, token0.decimals)
     let dummy1Amount = convertTokenToDecimal(event.params.amount1, token1.decimals)
 
     pair.dummy0 = pair.dummy0.minus(dummy0Amount)
     pair.dummy1 = pair.dummy1.minus(dummy1Amount)
+    pair.save()
+  }
+  if(event.block.number == BigInt.fromI32(2409174)){
+    pair.dummy0 = ZERO_BD
+    pair.dummy1 = ZERO_BD
+
+    let bundle = Bundle.load('1')
+    bundle.ethPrice = getEthPriceInUSD()
+    bundle.save()
+
+    pair.reserveETH = pair.reserve0
+      .times(token0.derivedETH as BigDecimal)
+      .plus(pair.reserve1.times(token1.derivedETH as BigDecimal))
+    pair.reserveUSD = pair.reserveETH.times(bundle.ethPrice)
+
+    pair.reserveWithDummy0 = pair.reserve0
+    pair.reserveWithDummy1 = pair.reserve1
     pair.save()
   }
 }
